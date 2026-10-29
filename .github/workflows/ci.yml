@@ -1,0 +1,51 @@
+name: CI
+
+# 触发：推 master、任何 PR、手动、以及被 release.yml 复用调用。
+# 注意本仓库默认分支是 master，不是 main。
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          # node:zlib 的 zstd 接口从 22.15 起才稳定可用，本插件解压会话日志依赖它。
+          node-version: 22
+
+      # 本仓库不提交 lockfile（pnpm 那份是空壳，与 npm 无关），因此不能冻结安装。
+      # token-count 运行时零依赖，这一步实际只是把 npm 自身的元数据准备好。
+      - name: Install dependencies
+        run: npm install --no-package-lock --no-audit --no-fund
+
+      - name: Run tests
+        run: npm test
+
+      # 发布完整性闸门。
+      # 本插件不做构建，发布包就是源码本身，package.json 的 files 白名单是唯一防线。
+      # npm pack 不检查导入图：白名单漏掉一个被 import 的模块时，
+      # 打包照样成功、退出码照样 0，缺陷要到用户机器上才 ERR_MODULE_NOT_FOUND。
+      - name: Verify published package is importable
+        run: npm run verify:pack
+
+      # node:test 在 Windows 上同样可用；这里显式断言解压链路未被平台影响。
+      - name: Smoke-test zstd decompression
+        run: node -e "const z=require('node:zlib');if(typeof z.zstdDecompressSync!=='function'){console.error('zstd 接口缺失，Node 版本过低');process.exit(1)};console.log('zstd ok')"

@@ -40,5 +40,10 @@
     "usage",
     "statistics"
   ],
+  "scripts": {
+    "test": "node --test",
+    "verify:pack": "node scripts/verify-pack.mjs",
+    "check": "npm run test && npm run verify:pack"
+  },
   "license": "MIT"
 }
