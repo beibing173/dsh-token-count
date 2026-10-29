@@ -108,3 +108,19 @@ export function timeOf(evt) {
   const t = typeof evt.time === 'number' ? evt.time : evt.data && typeof evt.data.time === 'number' ? evt.data.time : NaN
   return Number.isFinite(t) ? t : NaN
 }
+
+/**
+ * 提取一条事件的来源模型（provider / model）。
+ * DSH 会话日志里模型信息在 `data.message.source`（不是 `data.source`）。
+ * @param {object} evt
+ * @returns {{ provider: string, model: string } | null}
+ */
+export function sourceOf(evt) {
+  if (!evt || evt.type !== 'assistant/message') return null
+  const source = evt && evt.data && evt.data.message && evt.data.message.source
+  if (!source || typeof source !== 'object') return null
+  return {
+    provider: typeof source.provider === 'string' ? source.provider : '',
+    model: typeof source.model === 'string' ? source.model : '',
+  }
+}

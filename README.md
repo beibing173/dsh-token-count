@@ -1,6 +1,6 @@
 # dsh-token-count（Token 统计）
 
-DeepSeek Harness 的 **token 用量看板插件**：在设置页单开一页，用绿色热力网格展示按天 token 用量，并用「饼图 / 柱状图」切换展示输入 / 输出 / 缓存读 / 缓存写四大桶占比。
+DeepSeek Harness 的 **token 用量看板插件**：在设置页单开一页，用绿色热力网格展示按天 token 用量，并用「饼图 / 柱状图」切换展示**各模型**（provider/model）的用量占比。
 
 > 灵感来自 [dsh-codex-gpt](https://github.com/beibing173/dsh-codex-gpt) 的用量看板，但这是一个**全新独立插件**，数据源也完全不同。
 
@@ -8,15 +8,16 @@ DeepSeek Harness 的 **token 用量看板插件**：在设置页单开一页，�
 
 | 数据 | 来源 |
 |---|---|
-| 累计总量 | 扫描 `~/.dsh/sessions/<workspace>/<session>/session.v4.jsonl.zstd`，聚合 `assistant/message` 事件的 `usage`（四大互斥桶） |
+| 累计总量 | 扫描 `~/.dsh/sessions/<workspace>/<session>/session.v4.jsonl.zstd`，聚合 `assistant/message` 事件的 `usage`（输入 / 输出 / 缓存读 / 缓存写四大互斥桶） |
 | 按天热力 | 同上，按事件 `time`（毫秒）归到本地时区 `YYYY-MM-DD` |
+| 按模型分桶 | 从 `assistant/message` 事件的 `data.message.source` 取 `provider` / `model` |
 | 日志解压 | DSH 会话日志是多帧 zstd 拼接，按魔数 `28 B5 2F FD` 切帧、逐帧解压（`node:zlib` 的 `zstdDecompressSync`） |
 
 ## 功能
 
 - **累计总量**：输入 / 输出 / 缓存读 / 缓存写 四大桶 + 总计，覆盖会话数、日志体积。
-- **每日用量热力图**：GitHub 贡献图风格，横轴 = 周、纵轴 = 星期几，每格 = 一天，颜色越深用量越高；可切 30 / 90 / 180 / 365 天。
-- **用量结构**：饼图 / 柱状图一键切换，展示四大桶占比。
+- **每日用量热力图**：GitHub 贡献图风格，横轴 = 周、纵轴 = 星期几，每格 = 一天，颜色越深用量越高；鼠标悬停显示当日用量；可切 30 / 90 / 180 / 365 天。
+- **用量结构**：饼图 / 柱状图一键切换，按**模型**（provider/model）分块，多色区分。
 
 ## 缓存策略
 
@@ -49,8 +50,8 @@ node test/index.test.mjs
 ```
 index.js         宿主入口：扫描 + 增量缓存 + GET /dsh-token-count-api 路由
 session-log.js    会话日志读取（zstd 多帧解压 + 逐行解析）
-stats.js          纯聚合逻辑（四大桶 / 按天）
-client.js         浏览器侧：设置页热力网格 + 饼图/柱状图
+stats.js          纯聚合逻辑（四大桶 / 按天 / 按模型）
+client.js         浏览器侧：设置页热力网格 + 饼图/柱状图（按模型分色）
 ```
 
 ## License

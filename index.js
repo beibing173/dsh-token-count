@@ -147,8 +147,8 @@ function writeCache(cachePath, payload) {
 const emptyBuckets = () => ({ inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 })
 
 /**
- * 汇总全部会话：totals + daily，带增量缓存。
- * @returns {{ totals, daily, sessionCount, logBytes }}
+ * 汇总全部会话：totals + daily + byModel，带增量缓存。
+ * @returns {{ totals, daily, byModel, sessionCount, logBytes }}
  */
 export function computeStats(env) {
   const root = dshHome(env)
@@ -172,12 +172,14 @@ export function computeStats(env) {
 
   let totals = (cache && cache.totals) || emptyBuckets()
   let daily = (cache && cache.daily) || {}
+  let byModel = (cache && cache.byModel) || {}
   let sessionCount = 0
   let logBytes = 0
 
   if (dirty || !cache || !cache.totals) {
     totals = emptyBuckets()
     daily = {}
+    byModel = {}
     for (const file of logs) {
       let size = 0
       try {
@@ -193,10 +195,15 @@ export function computeStats(env) {
         const cell = daily[day] || (daily[day] = emptyBuckets())
         for (const key of BUCKETS) cell[key] += buckets[key]
       }
+      for (const [model, buckets] of Object.entries(agg.byModel)) {
+        const cell = byModel[model] || (byModel[model] = { ...emptyBuckets(), count: 0 })
+        for (const key of BUCKETS) cell[key] += buckets[key]
+        cell.count += buckets.count
+      }
     }
     const logsFp = {}
     for (const file of logs) logsFp[file] = fingerprintOf(file)
-    writeCache(cachePath, { at: Date.now(), totals, daily, logs: logsFp })
+    writeCache(cachePath, { at: Date.now(), totals, daily, byModel, logs: logsFp })
   } else {
     for (const file of logs) {
       try {
@@ -206,7 +213,7 @@ export function computeStats(env) {
     }
   }
 
-  return { totals, daily, sessionCount, logBytes }
+  return { totals, daily, byModel, sessionCount, logBytes }
 }
 
 // ────────────────────────────── 入口 ──────────────────────────────
@@ -240,7 +247,7 @@ export function apply(ctx, config) {
               }
             }
 
-            const { totals, daily, sessionCount, logBytes } = computeStats(env)
+            const { totals, daily, byModel, sessionCount, logBytes } = computeStats(env)
             const series = dailySeries(daily, days)
 
             sendJson(res, 200, {
@@ -249,6 +256,7 @@ export function apply(ctx, config) {
               totals,
               totalTokens: sumBuckets(totals),
               series,
+              byModel,
               sessionCount,
               logBytes,
               days,

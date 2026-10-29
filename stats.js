@@ -9,7 +9,7 @@
  * 时间口径：按宿主本地时区切「天」。这里只负责把毫秒时间戳归到
  * `YYYY-MM-DD`（本地时区），时区由运行时决定。
  */
-import { usageOf, timeOf } from './session-log.js'
+import { usageOf, timeOf, sourceOf } from './session-log.js'
 
 /** 四大桶字段名（与 projcache tokenUsage 同义，互不重叠）。 */
 export const BUCKETS = ['inputTokens', 'outputTokens', 'cacheReadTokens', 'cacheWriteTokens']
@@ -45,13 +45,29 @@ export function sumBuckets(buckets) {
 }
 
 /**
+ * 模型的稳定展示 id：`provider/model`（都缺失时回退 `(unknown)`）。
+ */
+export function modelKeyOf(source) {
+  if (!source) return '(unknown)'
+  const provider = source.provider || ''
+  const model = source.model || ''
+  if (!provider && !model) return '(unknown)'
+  return `${provider}/${model}`
+}
+
+/**
  * 聚合一批事件。
  * @param {object[]} events
- * @returns {{ totals: object, daily: Record<string, object> }}
+ * @returns {{
+ *   totals: object,
+ *   daily: Record<string, object>,
+ *   byModel: Record<string, object>,  // key = provider/model，value = 四桶累计 + count
+ * }}
  */
 export function aggregateEvents(events) {
   const totals = emptyBuckets()
   const daily = {}
+  const byModel = {}
 
   for (const evt of events || []) {
     const usage = usageOf(evt)
@@ -62,9 +78,14 @@ export function aggregateEvents(events) {
     if (day) {
       daily[day] = addInto(daily[day] || emptyBuckets(), usage)
     }
+
+    const key = modelKeyOf(sourceOf(evt))
+    const cell = byModel[key] || (byModel[key] = { ...emptyBuckets(), count: 0 })
+    addInto(cell, usage)
+    cell.count += 1
   }
 
-  return { totals, daily }
+  return { totals, daily, byModel }
 }
 
 /**
