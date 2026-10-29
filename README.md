@@ -24,13 +24,22 @@ DeepSeek Harness 的 **token 用量看板插件**：在设置页单开一页，�
 
 ## 安装 / 开发
 
-```powershell
-# 开发：把本目录软链（Junction）进 profile
-# ~/.dsh/profiles/desktop/node_modules/dsh-token-count -> 本目录
+**方式一：本地 Junction 软链（改代码即生效）**
 
-# 跑测试
+```powershell
+# 需要管理员权限，或在「设置 → 开发者选项 → 开发人员模式」开启后运行
+$nm = "$env:USERPROFILE\.dsh\profiles\desktop\node_modules"
+cmd /c "mklink /J `"$nm\dsh-token-count`" `"C:\Users\17367\Desktop\dsh-token-count`""
+```
+
+**方式二：DSH 插件市场「本地安装」**，指向本目录。
+
+**跑测试**
+
+```powershell
 node test/stats.test.mjs
 node test/session-log.test.mjs
+node test/index.test.mjs
 ```
 
 改宿主代码后需「禁用 → 启用」插件重载；改客户端后 `Ctrl+R` 即可。
