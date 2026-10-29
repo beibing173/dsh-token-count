@@ -1,0 +1,9 @@
+# dsh-token-count bundle patch —— 主机组合层。
+#
+# 单行完成能力：注册 GET /dsh-token-count-api 状态路由，
+# 浏览器侧入口由 package.json 的 dsh.client 声明自动装载 ./client。
+# 纯 insert(id/name) 可热挂载免重启。
+- insert:
+    - id: dsh-token-count
+      name: 'dsh-token-count'
+      config: {}

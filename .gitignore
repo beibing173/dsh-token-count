@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.inspect-*.jsonl
+.e2e-verify.mjs
+.debug-*.mjs
+.decode-all.mjs
+.dzstd*.mjs
+.probe.mjs
+.DS_Store

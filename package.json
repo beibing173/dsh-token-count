@@ -1,0 +1,44 @@
+{
+  "name": "dsh-token-count",
+  "displayName": "Token 统计",
+  "version": "0.1.0",
+  "private": true,
+  "description": "【Token 统计】DeepSeek Harness 的 token 用量看板：在设置页单开一页，用绿色热力网格展示按天 token 用量，并用饼图 / 柱状图切换展示输入 / 输出 / 缓存读 / 缓存写四大桶占比。",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "session-log.js",
+    "stats.js",
+    "client.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "token",
+    "usage",
+    "statistics"
+  ],
+  "license": "MIT"
+}
